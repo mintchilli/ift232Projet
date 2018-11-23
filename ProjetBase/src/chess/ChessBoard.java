@@ -138,9 +138,11 @@ public class ChessBoard {
 			throws Exception {
 		Scanner sc = new Scanner(file);
 		while (sc.hasNext()) {
-			String s = sc.nextLine();
-			int colonne = s.charAt(0) - 96;
-			int ligne = s.charAt(1) - 48;
+			ChessPiece.readFromStream(sc.nextLine());
+			//String s = sc.nextLine();
+			//int colonne = s.charAt(0) - 96;
+			//int ligne = s.charAt(1) - 48;
+			//grid[colonne][ligne] = new ChessPiece(colonne, ligne, this);
 		}
 		sc.close();
 

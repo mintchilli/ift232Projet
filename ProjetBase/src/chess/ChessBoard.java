@@ -2,6 +2,8 @@ package chess;
 
 import java.awt.Point;
 import java.io.File;
+import java.io.FileWriter;
+import java.util.Arrays;
 import java.util.Scanner;
 
 import chess.ui.BoardView;
@@ -26,14 +28,14 @@ public class ChessBoard {
 		grid = new ChessPiece[8][8];
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
-				grid[i][j] = new ChessPiece(i, j, this);
+				grid[i][j] = new ChessPiece(i, j);
 			}
 		}
 	}
 
 	// Place une pièce vide dans la case
 	public void clearSquare(int x, int y) {
-		grid[x][y] = new ChessPiece(x, y, this);
+		grid[x][y] = new ChessPiece(x, y);
 	}
 
 	// Place une pièce sur le planche de jeu.
@@ -83,46 +85,68 @@ public class ChessBoard {
 	// implantées ici.
 	public boolean move(Point gridPos, Point newGridPos) {
 
+		ChessPiece toMove = getPiece(gridPos);
+
 		// Vérifie si les coordonnées sont valides
 		if (!isValid(newGridPos))
 			return false;
 
+		if (!toMove.verifyMove(gridPos, newGridPos)) {
+			return false;
+		}
+
 		// Si la case destination est vide, on peut faire le mouvement
 		else if (isEmpty(newGridPos)) {
-			grid[newGridPos.x][newGridPos.y] = grid[gridPos.x][gridPos.y];
-			grid[gridPos.x][gridPos.y] = new ChessPiece(gridPos.x, gridPos.y,
-					this);
+			assignSquare(newGridPos, toMove);
+			clearSquare(gridPos);
 			return true;
 		}
 
 		// Si elle est occuppé par une pièce de couleur différente, alors
 		// c'est une capture
 		else if (!isSameColor(gridPos, newGridPos)) {
-			getUI().getChildren().remove(
-					grid[newGridPos.x][newGridPos.y].getUI());
-			grid[newGridPos.x][newGridPos.y] = grid[gridPos.x][gridPos.y];
-			grid[gridPos.x][gridPos.y] = new ChessPiece(gridPos.x, gridPos.y,
-					this);
-
+			removePiece(newGridPos);
+			clearSquare(gridPos);
+			assignSquare(newGridPos, toMove);
 			return true;
 		}
 
 		return false;
 	}
 
+	private void assignSquare(Point point, ChessPiece piece) {
+		grid[point.x][point.y] = piece;
+		grid[point.x][point.y].setGridPos(point);
+	}
+
+	private void clearSquare(Point point) {
+		grid[point.x][point.y] = new ChessPiece(point.x, point.y);
+	}
+
+	private void removePiece(Point point) {
+		getUI().getChildren().remove(grid[point.x][point.y].getUI());
+		clearSquare(point);
+	}
+
+	private ChessPiece getPiece(Point point) {
+		return grid[point.x][point.y];
+	}
+
 	public Point2D move(Point2D gridPos, Point2D newGridPos) {
-		
+
 		Point init = boardView.paneToGrid(gridPos.getX(), gridPos.getY());
 		Point end = boardView.paneToGrid(newGridPos.getX(), newGridPos.getY());
 
 		if (move(init, end)) {
 
-			Point2D newPos = boardView.gridToPane(grid[init.x][init.y], end.x, end.y);
-			grid[init.x][init.y].setGridPos(end);
+			Point2D newPos = boardView.gridToPane(grid[init.x][init.y], end.x,
+					end.y);
+
 			return newPos;
-			
+
 		} else {
-			Point2D oldPos = boardView.gridToPane(grid[init.x][init.y], init.x, init.y);
+			Point2D oldPos = boardView.gridToPane(grid[init.x][init.y], init.x,
+					init.y);
 			return oldPos;
 		}
 	}
@@ -136,22 +160,44 @@ public class ChessBoard {
 
 	public static ChessBoard readFromFile(File file, int x, int y)
 			throws Exception {
+		ChessBoard ret = new ChessBoard(x, y);
 		Scanner sc = new Scanner(file);
 		while (sc.hasNext()) {
-			ChessPiece.readFromStream(sc.nextLine());
-			//String s = sc.nextLine();
-			//int colonne = s.charAt(0) - 96;
-			//int ligne = s.charAt(1) - 48;
-			//grid[colonne][ligne] = new ChessPiece(colonne, ligne, this);
+			ChessPiece chessPiece = ChessPiece.readFromStream(sc.nextLine(),
+					ret);
+			ret.putPiece(chessPiece);
 		}
 		sc.close();
-
-		throw new Exception("Pas implanté");
+		return ret;
 	}
 
 	public void saveToFile(File file) throws Exception {
 
-		throw new Exception("Pas implanté");
+		FileWriter writer = new FileWriter(file);
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				Point pos = new Point(i, j);
+				if (!isEmpty(pos)) {
+					writer.write(ChessPiece.SaveToStream(grid[i][j]));
+				}
+			}
+		}
+		writer.flush();
+		writer.close();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ChessBoard other = (ChessBoard) obj;
+		if (!Arrays.deepEquals(grid, other.grid))
+			return false;
+		return true;
 	}
 
 }

@@ -18,7 +18,7 @@ public class ChessPiece {
 	private PieceView pieceView;
 
 	// Pour créer des pièces à mettre sur les cases vides
-	public ChessPiece(int x, int y, ChessBoard b) {
+	public ChessPiece(int x, int y) {
 		this.type = ChessUtils.TYPE_NONE;
 		this.color = ChessUtils.COLORLESS;
 		gridPosX = x;
@@ -32,9 +32,8 @@ public class ChessPiece {
 
 		color = ChessUtils.getColor(name);
 		type = ChessUtils.getType(name);
-		pieceView = new PieceView(name, pos, b, color, type);
 		setAlgebraicPos(pos);
-
+		pieceView = new PieceView(name, pos, b, color, type);
 	}
 
 	// Change la position avec la notation algébrique
@@ -80,7 +79,6 @@ public class ChessPiece {
 
 		return pieces;
 	}
-	
 
 	// Pour savoir si c'est une pièce vide (pour les cases vides de
 	// l'échiquier).
@@ -118,12 +116,94 @@ public class ChessPiece {
 		gridPosX = pos.x;
 		gridPosY = pos.y;
 	}
-	
-	public static void readFromStream(String line) {
-		
-		int colonne = line.charAt(0) - 96;
-		int ligne = line.charAt(1) - 48;
-		
+
+	public static ChessPiece readFromStream(String line, ChessBoard board) {
+
+		String pos = line.substring(0, 2);
+		String colorType = line.substring(3, 5);
+
+		return new ChessPiece(colorType, pos, board);
+
+	}
+
+	public static String SaveToStream(ChessPiece piece) {
+
+		String ret = ChessUtils.makeAlgebraicPosition(piece.gridPosX,
+				piece.gridPosY)
+				+ "-"
+				+ ChessUtils.makePieceName(piece.color, piece.type) + "\n";
+
+		return ret;
+
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ChessPiece other = (ChessPiece) obj;
+		if (color != other.color)
+			return false;
+		if (gridPosX != other.gridPosX)
+			return false;
+		if (gridPosY != other.gridPosY)
+			return false;
+		if (type != other.type)
+			return false;
+		return true;
+	}
+
+	public boolean verifyMove(Point gridPos, Point newGridPos) {
+
+		int deltax = newGridPos.x - gridPos.x;
+		int deltay = newGridPos.y - gridPos.y;
+
+		switch (this.type) {
+		case ChessUtils.TYPE_PAWN:
+			if (this.color == ChessUtils.BLACK) {
+				if (deltax == 0 && deltay == 1) {
+					return true;
+				}
+				return false;
+			} else {
+				if (deltax == 0 && deltay == -1) {
+					return true;
+				}
+				return false;
+			}
+		case ChessUtils.TYPE_KNIGHT:
+			if ((Math.abs(deltax) == 2 && Math.abs(deltay) == 1) || (Math.abs(deltax) == 1 && Math.abs(deltay) == 2)) {
+				return true;
+			}
+			return false;
+		case ChessUtils.TYPE_BISHOP:
+			if (Math.abs(deltax) == Math.abs(deltay)) {
+				return true;
+			}
+			return false;
+		case ChessUtils.TYPE_ROOK:
+			if ((Math.abs(deltax) == 0 && (Math.abs(deltay) >= 1 && Math.abs(deltay) <= 7))
+					|| (Math.abs(deltay) == 0 && (Math.abs(deltax) >= 1 && Math.abs(deltax) <= 7))) {
+				return true;
+			}
+			return false;
+		case ChessUtils.TYPE_QUEEN:
+			if ((Math.abs(deltax) == Math.abs(deltay)) || ((Math.abs(deltax) == 0 && (Math.abs(deltay) >= 1 && Math.abs(deltay) <= 7))
+					|| (Math.abs(deltay) == 0 && (Math.abs(deltax) >= 1 && Math.abs(deltax) <= 7)))) {
+				return true;
+			}
+			return false;
+		case ChessUtils.TYPE_KING:
+			if ((Math.abs(deltax) == 0 && Math.abs(deltay) == 1) || (Math.abs(deltax) == 1 && Math.abs(deltay) == 0) || (Math.abs(deltax) == 1 && Math.abs(deltay) == 1)) {
+				return true;
+			}
+		default:
+			return false;
+		}
 	}
 
 }
